@@ -21,6 +21,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "cmsis_os.h"
+#include "queue.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -56,6 +57,11 @@ const osThreadAttr_t myTask02_attributes = {
   .priority = (osPriority_t) osPriorityLow,
   .stack_size = 128 * 4
 };
+
+//Queues
+xQueueHandle q;
+
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -136,6 +142,10 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+
+  // init Queues
+  q = xQueueCreate(8,sizeof(unsigned int));
 
   /* Start scheduler */
   osKernelStart();
@@ -229,10 +239,13 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
+	unsigned int data =1;
   for(;;)
   {
-	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_7);
-    osDelay(500);//ms
+	//HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_7);
+	xQueueSend(q,(void *)&data, portMAX_DELAY);
+    osDelay(data*1000);//ms
+    data++;
   }
   /* USER CODE END 5 */ 
 }
@@ -250,8 +263,19 @@ void StartTask02(void *argument)
   /* Infinite loop */
   for(;;)
   {
-	HAL_GPIO_TogglePin(GPIOB,GPIO_PIN_14);
-    osDelay(1000);
+	unsigned int rec;
+	if(uxQueueMessagesWaiting(q)>1)
+	{
+
+		xQueueReceive(q, &(rec), portMAX_DELAY);
+
+		for(int i=0; i<=rec;i++)
+		{
+			HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14);
+			osDelay(100);
+		}
+	}
+    //osDelay(1000);
   }
   /* USER CODE END StartTask02 */
 }
